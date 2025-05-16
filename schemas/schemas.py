@@ -7,7 +7,7 @@ import json
 
 class TransactionCreate(BaseModel):
     id: str
-    ts: int  # Sesuai dengan BigInteger di SQLAlchemy
+    ts: int
     status: str
     amount: Decimal
     payment_method: str
