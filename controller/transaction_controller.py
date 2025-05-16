@@ -1,20 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from typing import List
 
+from models.models import Transaction
 from schemas.schemas import (
     TransactionById,
     TransactionByPayment,
     TransactionByStatus,
     TransactionCreate,
-    TsRangeRequest
+    TsRangeRequest,
+    TransactionUpdate
 )
 from services.transaction_service import (
     get_transactions_by_id,
     get_transactions_by_payment,
     get_transactions_by_status,
     get_transactions_by_ts,
-    process_transaction)
+    process_transaction,
+    update_transaction
+)
 from database import get_db
 
 router = APIRouter()
@@ -58,3 +62,25 @@ async def get_by_payment(payload: TransactionByPayment, db: Session = Depends(ge
     if not transaction:
         raise HTTPException(status_code=404, detail="not Found!")
     return transaction
+
+
+@router.get("/transactions/get", response_model=List[TransactionCreate])
+def get_trans(
+    limit: int = Query(10, ge=1),
+    offset: int = Query(10, ge=1),
+    db: Session = Depends(get_db)
+):
+    transaction = db.query(Transaction).offset(offset).limit(limit)
+    return transaction
+
+
+@router.put("/transactions/{ts}")
+def update_trans_endpoint(ts: int, updates: TransactionUpdate, db: Session = Depends(get_db)):
+
+    print("Looking for ts:", ts)
+    updated = update_transaction(ts, updates, db)
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Transaction Not Found")
+
+    return {"status": "success", "update_transaction": updated}

@@ -2,13 +2,21 @@ from sqlalchemy.orm import Session
 from fastapi import Request
 from typing import List
 from utils.transaction_utils import build_transaction_dict
-from schemas.schemas import TransactionById, TransactionByPayment, TransactionByStatus, TransactionCreate, TsRangeRequest
+from schemas.schemas import (
+    TransactionById,
+    TransactionByPayment,
+    TransactionByStatus,
+    TransactionCreate,
+    TsRangeRequest,
+    TransactionUpdate
+)
 from repository.transaction_repo import (
     get_transactions_by_ts_range,
     save_transaction,
     fetch_transaction_by_id,
     fetch_transaction_by_status,
-    fetch_transaction_by_payment
+    fetch_transaction_by_payment,
+    update_trans_by_ts
 )
 from models.models import Transaction
 
@@ -20,6 +28,10 @@ async def process_transaction(request: Request, db: Session):
     db_transaction = Transaction(**transaction_data.dict())
     save_transaction(db, db_transaction)
     return {"status": "success", "transaction_id": transaction_data.id}
+
+
+def update_transaction(ts: int, updates: TransactionUpdate, db: Session):
+    return update_trans_by_ts(ts, updates, db)
 
 
 def fetch_transactions_by_ts_range(

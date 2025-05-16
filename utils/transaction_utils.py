@@ -8,13 +8,13 @@ def build_transaction_dict(data: dict) -> dict:
     if products:
         if len(products) > 1:
             for idx, product in enumerate(products, 1):
-                key = f"{data['trans_id']}_{idx}"
+                key = f"{data['id']}_{idx}"
                 product_detail[key] = product
         else:
-            product_detail[data["trans_id"]] = products[0]
+            product_detail[data["id"]] = products[0]
 
     return {
-        "id": data["trans_id"],
+        "id": data["id"],
         "ts": data.get("ts", 0),
         "status": data.get("transaction_status", "pending"),
         "amount": data.get("transaction_amount", 0),
