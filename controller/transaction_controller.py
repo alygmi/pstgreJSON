@@ -17,7 +17,8 @@ from services.transaction_service import (
     get_transactions_by_status,
     get_transactions_by_ts,
     process_transaction,
-    update_transaction
+    update_transaction,
+    refund_transaction
 )
 from database import get_db
 
@@ -84,3 +85,14 @@ def update_trans_endpoint(ts: int, updates: TransactionUpdate, db: Session = Dep
         raise HTTPException(status_code=404, detail="Transaction Not Found")
 
     return {"status": "success", "update_transaction": updated}
+
+@router.put("/transactions/refund/{ts}")
+def refund_by_ts(ts: int, db: Session = Depends(get_db)):
+
+    refunded = refund_transaction(ts, db)
+
+    if not refunded:
+        raise HTTPException(status_code=404, detail="Transaction Not Found")
+
+    return {"status": "success", "refund_transaction": refunded}
+

@@ -16,7 +16,8 @@ from repository.transaction_repo import (
     fetch_transaction_by_id,
     fetch_transaction_by_status,
     fetch_transaction_by_payment,
-    update_trans_by_ts
+    update_trans_by_ts,
+    refund_approval_by_ts
 )
 from models.models import Transaction
 
@@ -32,6 +33,9 @@ async def process_transaction(request: Request, db: Session):
 
 def update_transaction(ts: int, updates: TransactionUpdate, db: Session):
     return update_trans_by_ts(ts, updates, db)
+
+def refund_transaction(ts: int, db: Session):
+    return refund_approval_by_ts(ts, db)
 
 
 def fetch_transactions_by_ts_range(
@@ -67,3 +71,4 @@ async def get_transactions_by_payment(db: Session, payload: TransactionByPayment
     tx_list = fetch_transaction_by_payment(db, payload.payment_method)
 
     return [TransactionCreate(**tx.__dict__) for tx in tx_list] if tx_list else None
+

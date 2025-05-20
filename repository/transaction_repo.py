@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError, DataError, ProgrammingError
 from schemas.schemas import TransactionUpdate
 
+import time
+
 
 def save_transaction(db: Session, transaction: Transaction):
     try:
@@ -60,6 +62,47 @@ def update_trans_by_ts(ts: int, updates: TransactionUpdate, db: Session):
         db.rollback()
         raise HTTPException(
             status_code=500, detail=f"Error tidak dikenal: {str(e)}")
+
+def refund_approval_by_ts(ts: int, db: Session):
+    try:
+        transaction = db.query(Transaction).filter(Transaction.ts == ts).first()
+
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+
+        # Epoch generator (milidetik)
+        now_epoch = int(time.time() * 1000)
+
+        # Ambil existing refund_detail, atau kosongkan
+        refund_detail = transaction.refund_detail or {}
+
+        if refund_detail.get("approval"):
+            raise HTTPException(status_code=400, detail="Transaction already refunded!")
+
+        # Set detail refund
+        refund_detail["refund_request_ts"] = now_epoch
+        refund_detail["approval"] = True
+
+        # Simpan ke DB
+        transaction.refund_detail = refund_detail
+        db.commit()
+        db.refresh(transaction)
+
+        return transaction
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Gagal menyimpan: duplikasi atau key tidak valid.")
+    except DataError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Gagal menyimpan: format atau tipe data tidak sesuai.")
+    except ProgrammingError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Gagal menyimpan: error pada sintaks SQL.")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error tidak dikenal: {str(e)}")
+
 
 
 def get_transactions_by_ts_range(

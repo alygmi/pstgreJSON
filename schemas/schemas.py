@@ -59,7 +59,7 @@ class ProductDetail(BaseModel):
 
 class RefundDetail(BaseModel):
     refund_request_ts: Optional[int] = None
-    refund_ts: Optional[int] = None
+    approval: Optional[bool] = None
 
 
 class Extras(BaseModel):
