@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException, 
+    Query, 
+    Request, 
+    Form
+    )
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -9,7 +16,8 @@ from schemas.schemas import (
     TransactionByStatus,
     TransactionCreate,
     TsRangeRequest,
-    TransactionUpdate
+    TransactionUpdate,
+    TransactionOut
 )
 from services.transaction_service import (
     get_transactions_by_id,
@@ -18,7 +26,8 @@ from services.transaction_service import (
     get_transactions_by_ts,
     process_transaction,
     update_transaction,
-    refund_transaction
+    refund_transaction,
+    fetch_sales_data
 )
 from database import get_db
 
@@ -96,3 +105,17 @@ def refund_by_ts(ts: int, db: Session = Depends(get_db)):
 
     return {"status": "success", "refund_transaction": refunded}
 
+@router.post("/transactions/Apireport/SaleCheck")
+def get_data_sales(
+    db: Session = Depends(get_db),
+    device_id: str = Form(...),
+    start_ts: int = Form(...),
+    end_ts: int = Form(...) 
+):
+
+    return fetch_sales_data(
+        db=db,
+        device_id = device_id,
+        start_ts = start_ts,
+        end_ts = end_ts
+    )

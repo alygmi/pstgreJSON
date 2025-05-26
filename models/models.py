@@ -6,7 +6,7 @@ from database import Base
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True) 
     ts = Column(BigInteger)
     status = Column(String)
     amount = Column(Numeric)

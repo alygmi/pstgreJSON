@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 from fastapi import Request
 from typing import List
 from utils.transaction_utils import build_transaction_dict
@@ -8,7 +9,8 @@ from schemas.schemas import (
     TransactionByStatus,
     TransactionCreate,
     TsRangeRequest,
-    TransactionUpdate
+    TransactionUpdate,
+    TransactionOut
 )
 from repository.transaction_repo import (
     get_transactions_by_ts_range,
@@ -17,7 +19,8 @@ from repository.transaction_repo import (
     fetch_transaction_by_status,
     fetch_transaction_by_payment,
     update_trans_by_ts,
-    refund_approval_by_ts
+    refund_approval_by_ts,
+    get_sales_data
 )
 from models.models import Transaction
 
@@ -71,4 +74,24 @@ async def get_transactions_by_payment(db: Session, payload: TransactionByPayment
     tx_list = fetch_transaction_by_payment(db, payload.payment_method)
 
     return [TransactionCreate(**tx.__dict__) for tx in tx_list] if tx_list else None
+
+def fetch_sales_data(db: Session, device_id: str, start_ts:int, end_ts: int):
+    transactions = get_sales_data(db, device_id, start_ts, end_ts)
+
+    result = []
+    for t in transactions:
+        product = t.product_detail or {}
+        name = product.get("product", {}).get("name", "")
+        sku = product.get("product", {}).get("sku", "")
+        row = [
+            name,
+            sku,
+            str(t.amount),
+            str(product.get("quantity", "1")),
+            datetime.fromtimestamp(t.ts / 1000).strftime("%Y-%m-%d %H:%M:%S"),
+            t.status
+        ]
+        result.append(row)
+
+    return{"sale" : result}
 

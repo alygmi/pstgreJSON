@@ -1,4 +1,9 @@
-from pydantic import BaseModel, validator, Field
+from pydantic import( 
+    BaseModel, 
+    validator, 
+    Field, 
+    ConfigDict
+    )
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 from datetime import datetime
@@ -105,6 +110,24 @@ class TsRangeRequest(BaseModel):
     ts_start: Optional[int] = None
     ts_end: Optional[int] = None
 
+class TransactionOut(BaseModel):
+    id: str
+    ts: int
+    status: str
+    amount: Decimal
+    payment_method: str
+    device_id: str
+    device_tags: Optional[List[str]] #= Field(default_factory=list)
+    dispense_code: Optional[Decimal]
+
+    payment_detail: Optional[Dict[str, Any]]
+    device_detail: Optional[Dict[str, Any]] 
+    dispense_detail: Optional[Dict[str, Any]]
+    product_detail: Optional[Dict[str, Any]]
+    refund_detail: Optional[Dict[str, Any]]
+    extras: Optional[Dict[str, Any]]
+
+    model_config = ConfigDict(from_attributes=True)
 
 class TransactionById(BaseModel):
     id: str

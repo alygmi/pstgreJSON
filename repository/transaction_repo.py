@@ -130,3 +130,10 @@ def fetch_transaction_by_status(db: Session, status: str):
 
 def fetch_transaction_by_payment(db: Session, payment_method: str):
     return db.query(Transaction).filter(Transaction.payment_method == payment_method).all()
+
+def get_sales_data(db: Session, device_id: str, start_ts: int, end_ts: int):
+    return db.query(Transaction).filter(
+        Transaction.device_id == device_id,
+        Transaction.ts >= start_ts,
+        Transaction.ts <= end_ts
+    ).order_by(Transaction.ts.desc()).all()
