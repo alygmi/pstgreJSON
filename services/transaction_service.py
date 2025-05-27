@@ -81,16 +81,16 @@ def fetch_sales_data(db: Session, device_id: str, start_ts:int, end_ts: int):
     result = []
     for t in transactions:
         product = t.product_detail or {}
-        name = product.get("product", {}).get("name", "")
-        sku = product.get("product", {}).get("sku", "")
-        row = [
-            name,
-            sku,
-            str(t.amount),
-            str(product.get("quantity", "1")),
-            datetime.fromtimestamp(t.ts / 1000).strftime("%Y-%m-%d %H:%M:%S"),
-            t.status
-        ]
+        # name = product.get("product", {}).get("name", "")
+        # sku = product.get("product", {}).get("sku", "")
+        row = {
+            "name": product.get("name", ""),
+            "sku": product.get("sku", ""),
+            "gross_amount": str(t.amount),
+            "quantity": str(product.get("quantity", "1")),
+            "transaction_time": datetime.fromtimestamp(t.ts / 1000).strftime("%Y-%m-%d %H:%M:%S"),
+            "transaction_status": t.status
+        }
         result.append(row)
 
     return{"sale" : result}
