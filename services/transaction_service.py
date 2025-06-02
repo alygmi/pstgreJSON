@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
-from fastapi import Request
-from typing import List
+from fastapi import Request, Query
+from typing import List, Dict, Any, Optional
+from sqlalchemy import asc, desc
 from utils.transaction_utils import build_transaction_dict
 from schemas.schemas import (
     TransactionById,
@@ -20,9 +21,13 @@ from repository.transaction_repo import (
     fetch_transaction_by_payment,
     update_trans_by_ts,
     refund_approval_by_ts,
-    get_sales_data
+    get_sales_data,
+    getApiDataExternal
 )
 from models.models import Transaction
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def process_transaction(request: Request, db: Session):
@@ -75,8 +80,15 @@ async def get_transactions_by_payment(db: Session, payload: TransactionByPayment
 
     return [TransactionCreate(**tx.__dict__) for tx in tx_list] if tx_list else None
 
-def fetch_sales_data(db: Session, device_id: str, start_ts:int, end_ts: int):
-    transactions = get_sales_data(db, device_id, start_ts, end_ts)
+def fetch_sales_data(
+    db: Session, 
+    device_id: str, 
+    start_ts:Optional[int], 
+    end_ts: Optional[int],
+    limit: Optional[int] = None,
+    sort_order: Optional[str] = "desc"
+    ):
+    transactions = get_sales_data(db, device_id, start_ts, end_ts, limit, sort_order)
 
     result = []
     for t in transactions:
@@ -94,4 +106,80 @@ def fetch_sales_data(db: Session, device_id: str, start_ts:int, end_ts: int):
         result.append(row)
 
     return{"sale" : result}
+
+# def convert_timestamp_to_datetime(ts: int) -> str:
+#     dt = datetime.fromtimestamp(ts / 1000)
+#     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+# async def getMachineData() -> dict:
+#     raw_data = await getApiDataExternal()
+
+#     print("RAW DATA:", raw_data)
+
+#     if not raw_data:
+#         raise ValueError("Data kosong dari API")
+
+#     first_item = raw_data[0]  # karena hasilnya list
+
+#     online_data = first_item.get("online", {})  # aman karena dict
+#     is_online = online_data.get("is_online", False)
+#     last_online_ts = online_data.get("last_online_ts")
+
+#     formatted_data = {
+#         "id": str(first_item.get("id", "")),
+#         "code": first_item.get("serial_number", ""),
+#         "name": first_item.get("name", ""),
+#         "last_online": convert_timestamp_to_datetime(last_online_ts) if last_online_ts else None,
+#         "status": "online" if is_online else "offline"
+#     }
+
+#     print("DATA AKAN DIKEMBALIKAN:", formatted_data)
+
+#     return formatted_data
+
+def convert_timestamp_to_datetime(ts: int) -> str:
+    """Konversi timestamp (ms) ke string datetime."""
+    if not isinstance(ts, (int, float)) or ts <= 0:
+        raise ValueError("Timestamp harus berupa angka positif")
+    try:
+        dt = datetime.fromtimestamp(ts / 1000)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except (OverflowError, OSError) as e:
+        raise ValueError(f"Gagal konversi timestamp: {str(e)}")
+
+async def getMachineData() -> dict:
+    try:
+        raw_data = await getApiDataExternal()
+        print(f"Total raw data items: {len(raw_data)}")  # Debug: cek jumlah data
+
+        if not raw_data or not isinstance(raw_data, list):
+            raise ValueError("Data devices kosong atau tidak valid")
+
+        result = []
+        for device in raw_data:
+            if not isinstance(device, dict):  # Pastikan tiap device adalah dict
+                print(f"Skipping invalid device: {device}")  # Debug
+                continue
+
+            online_data = device.get("online", {})
+            
+            # Debug: print device yang sedang diproses
+            print(f"Processing device: {device.get('id')} - {device.get('serial_number')}")
+            
+            transformed = {
+                "id": str(device.get("id", "")),
+                "code": device.get("serial_number", ""),
+                "name": device.get("name", ""),
+                "last_online": convert_timestamp_to_datetime(online_data.get("last_online_ts")) 
+                             if online_data.get("last_online_ts") else None,
+                "status": "online" if online_data.get("is_online", False) else "offline"
+            }
+            result.append(transformed)
+
+        print(f"Total transformed items: {len(result)}")  # Debug
+        return {"result": result}
+
+    except Exception as e:
+        print(f"Error in processing: {str(e)}")  # Debug
+        raise ValueError(f"Gagal memproses data: {str(e)}")
 

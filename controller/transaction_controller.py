@@ -7,7 +7,9 @@ from fastapi import (
     Form
     )
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from sqlalchemy import asc, desc
+import logging
 
 from models.models import Transaction
 from schemas.schemas import (
@@ -27,10 +29,12 @@ from services.transaction_service import (
     process_transaction,
     update_transaction,
     refund_transaction,
-    fetch_sales_data
+    fetch_sales_data,
+    getMachineData
 )
 from database import get_db
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -109,13 +113,21 @@ def refund_by_ts(ts: int, db: Session = Depends(get_db)):
 def get_data_sales(
     db: Session = Depends(get_db),
     device_id: str = Form(...),
-    start_ts: int = Form(...),
-    end_ts: int = Form(...) 
+    ts_start: Optional[int] = Form(None),
+    ts_end: Optional[int] = Form(None),
+    sort_order: Optional[str] = Form("desc"),
+    limit: Optional[int] = Form(None),
 ):
 
-    return fetch_sales_data(
-        db=db,
-        device_id = device_id,
-        start_ts = start_ts,
-        end_ts = end_ts
+    return fetch_sales_data(db, device_id, ts_start, ts_end, limit, sort_order
     )
+
+@router.get("/transactions/Apireport/Machinecheck")
+async def get_machine_check():
+    try:
+        result = await getMachineData()
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=502, detail=f"Upstream error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
