@@ -86,9 +86,10 @@ def fetch_sales_data(
     start_ts:Optional[int], 
     end_ts: Optional[int],
     limit: Optional[int] = None,
-    sort_order: Optional[str] = "desc"
+    sort: Optional[str] = "desc",
+    settlement: bool = False
     ):
-    transactions = get_sales_data(db, device_id, start_ts, end_ts, limit, sort_order)
+    transactions = get_sales_data(db, device_id, start_ts, end_ts, limit, sort, settlement)
 
     result = []
     for t in transactions:

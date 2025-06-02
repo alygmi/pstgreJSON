@@ -115,12 +115,12 @@ def get_data_sales(
     device_id: str = Form(...),
     ts_start: Optional[int] = Form(None),
     ts_end: Optional[int] = Form(None),
-    sort_order: Optional[str] = Form("desc"),
+    sort: Optional[str] = Form("desc"),
     limit: Optional[int] = Form(None),
+    settlement: Optional[bool] = Form(False)
 ):
 
-    return fetch_sales_data(db, device_id, ts_start, ts_end, limit, sort_order
-    )
+    return fetch_sales_data(db, device_id, ts_start, ts_end, limit, sort, settlement)
 
 @router.get("/transactions/Apireport/Machinecheck")
 async def get_machine_check():

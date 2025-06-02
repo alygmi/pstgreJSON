@@ -147,7 +147,8 @@ def get_sales_data(
     start_ts:Optional[int] = None, 
     end_ts: Optional[int] = None,
     limit: Optional[int] = None,
-    sort_order: Optional[str] = "desc"
+    sort: Optional[str] = "desc",
+    settlement: bool = None
     ):
     query = db.query(Transaction).filter(Transaction.device_id == device_id)
 
@@ -155,8 +156,11 @@ def get_sales_data(
         query = query.filter(Transaction.ts >= start_ts)
     if end_ts is not None:
         query = query.filter(Transaction.ts <= end_ts)
+    
+    if only_settlement:
+        query = query.filter(Transaction.status == "settlement")
 
-    if sort_order == "asc":
+    if sort == "asc":
         query = query.order_by(asc(Transaction.ts))
     else:
         query = query.order_by(desc(Transaction.ts))
