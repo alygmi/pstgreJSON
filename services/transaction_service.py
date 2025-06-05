@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import Request, Query
 from typing import List, Dict, Any, Optional
 from sqlalchemy import asc, desc
-from utils.transaction_utils import build_transaction_dict
+from utils.transaction_utils import build_transaction_dict, build_order_api
 from schemas.schemas import (
     TransactionById,
     TransactionByPayment,
@@ -13,6 +13,7 @@ from schemas.schemas import (
     TransactionUpdate,
     TransactionOut
 )
+from schemas.order_schemas import TransactionCreateOrder
 from repository.transaction_repo import (
     get_transactions_by_ts_range,
     save_transaction,
@@ -22,9 +23,11 @@ from repository.transaction_repo import (
     update_trans_by_ts,
     refund_approval_by_ts,
     get_sales_data,
-    getApiDataExternal
+    getApiDataExternal,
+    order_transaction
 )
 from models.models import Transaction
+from models.order_models import TransactionOrder
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,13 +41,23 @@ async def process_transaction(request: Request, db: Session):
     save_transaction(db, db_transaction)
     return {"status": "success", "transaction_id": transaction_data.id}
 
+async def process_order(request: Request, db: Session):
+    data = await request.json()
+    transaction_dict = build_order_api(data)
+    transaction_data = TransactionCreateOrder(**transaction_dict)
+    db_transaction = TransactionOrder(**transaction_data.dict())
+    order_transaction(db, db_transaction)
+    return {
+            "status": "SUCCESS",
+            "message": "Create order success"
+        }
+
 
 def update_transaction(ts: int, updates: TransactionUpdate, db: Session):
     return update_trans_by_ts(ts, updates, db)
 
 def refund_transaction(ts: int, db: Session):
     return refund_approval_by_ts(ts, db)
-
 
 def fetch_transactions_by_ts_range(
     db: Session,
@@ -56,7 +69,6 @@ def fetch_transactions_by_ts_range(
         return []
     return [TransactionCreate(**t.__dict__) for t in transactions]
 
-
 async def get_transactions_by_ts(db: Session, payload: TsRangeRequest):
     return get_transactions_by_ts_range(
         db,
@@ -64,16 +76,13 @@ async def get_transactions_by_ts(db: Session, payload: TsRangeRequest):
         ts_end=payload.ts_end
     )
 
-
 async def get_transactions_by_id(db: Session, payload: TransactionById):
     return fetch_transaction_by_id(db, payload.id)
-
 
 async def get_transactions_by_status(db: Session, payload: TransactionByStatus):
     tx_list = fetch_transaction_by_status(db, payload.status)
 
     return [TransactionCreate(**tx.__dict__) for tx in tx_list] if tx_list else None
-
 
 async def get_transactions_by_payment(db: Session, payload: TransactionByPayment):
     tx_list = fetch_transaction_by_payment(db, payload.payment_method)

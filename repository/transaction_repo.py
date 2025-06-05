@@ -7,6 +7,7 @@ from sqlalchemy import asc, desc
 from schemas.schemas import TransactionUpdate
 from httpx import Timeout, AsyncHTTPTransport
 from dotenv import load_dotenv
+from models.order_models import TransactionOrder
 import httpx
 import os
 import logging
@@ -39,6 +40,41 @@ def save_transaction(db: Session, transaction: Transaction):
         db.rollback()
         raise HTTPException(
             status_code=500, detail=f"Error tidak dikenal: {str(e)}")
+
+def order_transaction(db: Session, db_transaction: TransactionOrder) -> TransactionOrder:
+    try:
+        db.add(db_transaction)
+        db.commit()
+        db.refresh(db_transaction)
+        return db_transaction
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Gagal menyimpan: mungkin ada duplikasi atau key tidak valid."
+        )
+
+    except DataError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Gagal menyimpan: format atau tipe data tidak sesuai."
+        )
+
+    except ProgrammingError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Gagal menyimpan: error pada sintaks SQL."
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error tidak dikenal: {str(e)}"
+        )
 
 
 def update_trans_by_ts(ts: int, updates: TransactionUpdate, db: Session):

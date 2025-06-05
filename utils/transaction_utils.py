@@ -54,3 +54,19 @@ def build_transaction_dict(data: dict) -> dict:
         "extras": data.get("extras", {})
     }
     
+def build_order_api(data: dict) -> dict:
+    return {
+        "order_no": data.get("orderNo"),
+        "transaction_id": data.get("transcationID"),  # <- tetap ambil dari input typo
+        "date": data.get("date"),
+        "machine_no": data.get("machineNo"),
+        "machine_name": data.get("machineName"),
+        "location_id": data.get("locationId"),
+        "location_name": data.get("locationName", ""),
+        "product_id": data.get("productId"),
+        "product_name": data.get("productName"),
+        "recorded_price": data.get("recordedPrice"),
+        "quantity": data.get("Quantity"),
+        "mid": data.get("mid", ""),
+        "status": data.get("status"),
+    }

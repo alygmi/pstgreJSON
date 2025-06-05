@@ -30,7 +30,8 @@ from services.transaction_service import (
     update_transaction,
     refund_transaction,
     fetch_sales_data,
-    getMachineData
+    getMachineData,
+    process_order
 )
 from database import get_db
 
@@ -131,3 +132,11 @@ async def get_machine_check():
         raise HTTPException(status_code=502, detail=f"Upstream error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/transactions/veem/order")
+async def create_order(request: Request, db: Session = Depends(get_db)):
+    try:
+        return await process_order(request, db)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) 
